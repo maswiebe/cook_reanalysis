@@ -6,7 +6,6 @@
 
 * User must uncomment the following line ("global ...") and set the filepath equal to the folder containing this run.do file 
 /* global root "/path/to/dir/" */
-global root "/home/michael/Dropbox/replications/cook_reanalysis"
 
 clear
 set more off
