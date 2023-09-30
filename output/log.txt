@@ -1,0 +1,2093 @@
+------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /home/michael/Dropbox/replications/cook_reanalysis/output/log.txt
+  log type:  text
+ opened on:  29 Sep 2023, 17:36:21
+
+. 
+. * Stata version control
+. version 16
+
+. 
+. * All required Stata packages are available in the code/libraries/stata folder
+. /* tokenize `"$S_ADO"', parse(";")
+> while `"`1'"' != "" {
+>   if `"`1'"'!="BASE" cap adopath - `"`1'"'
+>   macro shift
+> }
+> adopath ++ "$root/code/libraries/stata" */
+. 
+. do "$root/code/cook_reanalysis.do"
+
+. *-------------------------------------------------------------------------------
+. * Stata code for replicating Cook (2014)
+. *-------------------------------------------------------------------------------
+. 
+. * uncomment line below and set path to directory containing this file
+. *global root "/path/to/dir/"
+. 
+. global data "$root/data"
+
+. global tables "$root/output/tables"
+
+. global figures "$root/output/figures"
+
+. 
+. *-------------------------------------------------------------------------------
+. *** clean population data
+. *-------------------------------------------------------------------------------
+. 
+. * raw population data from Census:
+.   * https://www.census.gov/content/dam/Census/library/working-papers/2002/demo/POP-twps0056.pd
+> f
+.   * Table 1, columns for white and black
+. * $data/population_excl_indian excludes Indian territory in 1890
+. * $data/population_incl_indian includes Indian territory in 1890
+. 
+. import delimited "$data/population.csv", clear
+(4 vars, 9 obs)
+
+. 
+. *** keep value including indian territory in 1890
+.   * larger pop
+. preserve
+
+. drop if year==1890 & population == 62622250
+(1 observation deleted)
+
+. tsset year
+        time variable:  year, 1870 to 1940, but with gaps
+                delta:  1 unit
+
+. tsfill, full
+
+. 
+. * constant carryforward
+. carryforward pop*, gen(population_const popwhite_const popblack_const)
+population_const:  (63 real changes made)
+popwhite_const:  (63 real changes made)
+popblack_const:  (63 real changes made)
+
+. 
+. * linear interpolation
+. ipolate population year , gen(population_inter)
+
+. ipolate pop_white year , gen(popwhite_inter)
+
+. ipolate pop_black year , gen(popblack_inter)
+
+. 
+. save "$data/population_incl_indian",replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/data/population_incl_indian.dta n
+> ot found)
+file /home/michael/Dropbox/replications/cook_reanalysis/data/population_incl_indian.dta saved
+
+. restore
+
+. 
+. *** keep value excluding indian territory in 1890
+.   * smaller pop
+. preserve
+
+. drop if year==1890 & population == 62947714
+(1 observation deleted)
+
+. tsset year, delta(10)
+        time variable:  year, 1870 to 1940
+                delta:  10 units
+
+. gen growth = D.pop_black/L.pop_black
+(1 missing value generated)
+
+. gen ann_growth = (pop_black /L.pop_black)^(1/10) -1
+(1 missing value generated)
+
+. tsset year
+        time variable:  year, 1870 to 1940, but with gaps
+                delta:  1 unit
+
+. tsfill, full
+
+. 
+. * constant carryforward
+. carryforward population pop_white pop_black, gen(population_const popwhite_const popblack_cons
+> t)
+population_const:  (63 real changes made)
+popwhite_const:  (63 real changes made)
+popblack_const:  (63 real changes made)
+
+. 
+. * fill backwards
+. gsort -year
+
+. carryforward population pop_white pop_black, gen(population_const_back popwhite_const_back pop
+> black_const_back)
+population_const_back:  (63 real changes made)
+popwhite_const_back:  (63 real changes made)
+popblack_const_back:  (63 real changes made)
+
+. carryforward ann_growth, replace
+ann_growth:  (64 real changes made)
+
+. sort year
+
+. 
+. * linear interpolation
+. ipolate population year , gen(population_inter)
+
+. ipolate pop_white year , gen(popwhite_inter)
+
+. ipolate pop_black year , gen(popblack_inter)
+
+. 
+. * exponential growth
+. gen popblack_exp = pop_black
+(63 missing values generated)
+
+. forvalues j = 187/193 {
+  2.   forvalues i = 1/9 {
+  3.       replace popblack_exp = popblack_exp[_n-1]*(1+ann_growth) if year==real(string(`j')+st
+> ring(`i'))
+  4.     }
+  5. }
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+
+. 
+. save "$data/population_excl_indian",replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/data/population_excl_indian.dta n
+> ot found)
+file /home/michael/Dropbox/replications/cook_reanalysis/data/population_excl_indian.dta saved
+
+. restore
+
+. 
+. *-------------------------------------------------------------------------------
+. *** patent variable from panel data
+. *-------------------------------------------------------------------------------
+. 
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. * grant-year patents (table 7)
+. collapse (sum) patent, by(year)
+
+. rename patent patent_panel
+
+. save "$data/patent_panel.dta"
+file /home/michael/Dropbox/replications/cook_reanalysis/data/patent_panel.dta saved
+
+. 
+. * application-year patents (table 9)
+. use "$data/pats_state_regs_wcontrol.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. collapse (sum) patent if race==1, by(year)
+
+. rename patent patent_t9
+
+. save "$data/patent_tab9.dta", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/data/patent_tab9.dta not found)
+file /home/michael/Dropbox/replications/cook_reanalysis/data/patent_tab9.dta saved
+
+. 
+. *-------------------------------------------------------------------------------
+. *** Data irregularities
+. *-------------------------------------------------------------------------------
+. * use aggregate panel data grant-year patents (total=702) as well as time series patents (tota
+> l=672)
+. 
+. use "$data/pats_time_series.dta", clear
+
+. merge m:1 year using "$data/patent_panel.dta"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               142  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. * use excluding-indian for blacks
+. merge m:1 year using "$data/population_excl_indian"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               142  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. rename popblack_exp excl_popblack_exp
+
+. drop pop*
+
+. rename excl_popblack_exp popblack_exp
+
+. 
+. * use including-indian for whites
+. merge m:1 year using "$data/population_incl_indian"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                               142  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. merge m:1 year using "$data/pats_fig2_fig3.dta"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             4
+        from master                         0  (_merge==1)
+        from using                          4  (_merge==2)
+
+    matched                               142  (_merge==3)
+    -----------------------------------------
+
+. drop if year<1870
+(4 observations deleted)
+
+. drop _merge
+
+. 
+. tsset race year
+       panel variable:  race (strongly balanced)
+        time variable:  year, 1870 to 1940
+                delta:  1 year
+
+. 
+. gen lpatapppc = log(pat_appyear_pm)
+(8 missing values generated)
+
+. lab var Dllynchpc "Lynchings"
+
+. lab var seglaw "Segregation laws"
+
+. 
+. gen patgrant_panel = (patent_panel/popblack_exp)*1000000
+
+. * grant-year patents per million
+. * use exponentially interpolated black population
+. gen lpatgrant_panel = log(patgrant_panel)
+
+. replace lpatgrant_panel = lpatgrntpc if race==0
+(71 real changes made)
+
+. * no changes to make for white patents
+. 
+. gen pg_const_w = patgrntpc*popwhite_const/1000000
+
+. * grant-year patents, constant imputation using white population
+. gen patgrant_fix = (pg_const_w/popblack_exp)*1000000 if race==1
+(71 missing values generated)
+
+. * fix: use exponential interpolation and black population
+. gen lpatgrant_fix = log(patgrant_fix)
+(71 missing values generated)
+
+. 
+. *bro year pg_const_w patent_panel if race==1
+. *tw line patent_panel pg_const_w year if race==1
+. * I get integer values, confirming that Cook used the white population (and constant imputatio
+> n) to calculate black patents per million
+. 
+. preserve
+
+. collapse (sum) pg_const_w patent_panel  if race==1
+
+. su
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  pg_const_w |          1         672           .        672        672
+patent_panel |          1         702           .        702        702
+
+. * 672 time series patents, 702 panel data patents
+. restore
+
+. 
+. lab var patgrntpc "Time series"
+
+. lab var patgrant_panel "Panel"
+
+. lab var patgrant_fix "Time series (fixed)"
+
+. * graph: original patgrant, fixed (use black pop instead of white), aggregate panel (black pop
+> )
+. 
+. set scheme plotplainblind
+
+. tw line patgrant_panel patgrntpc patgrant_fix year if race==1, title("") xtitle("") ytitle("Pa
+> tents per million") legend(pos(6) order(2 3 1) rows(1))
+
+. graph export "$figures/grant_year_color.png", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/grant_year_color.p
+> ng not found)
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/grant_year_color.png wri
+> tten in PNG format)
+
+. graph export "$figures/grant_year_color.pdf", replace
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/grant_year_color.pdf wri
+> tten in PDF format)
+
+. graph export "$figures/grant_year_color.eps", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/grant_year_color.e
+> ps not found)
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/grant_year_color.eps wri
+> tten in EPS format)
+
+. 
+. *-------------------------------------------------------------------------------
+. *** note: application-year patents is more consistent between time series and panel data
+. * (application-year differs from grant-year, because for the same patent, application and gran
+> t occurs in different years)
+. preserve
+
+. keep if race==1
+(71 observations deleted)
+
+. 
+. merge 1:1 year using "$data/patent_tab9.dta"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             4
+        from master                         4  (_merge==1)
+        from using                          0  (_merge==2)
+
+    matched                                67  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. 
+. gen pa_const_w = pat_appyear_pm*popwhite_const/1000000
+(4 missing values generated)
+
+. * no
+. gen pa_const_b = pat_appyear_pm*popblack_const/1000000
+(4 missing values generated)
+
+. * integer values during multiples of ten! she interpolated
+. 
+. gen pa_inter_exp_b = pat_appyear_pm*popblack_exp/1000000
+(4 missing values generated)
+
+. * for application-year, use black population with exponential interpolation
+.   * get integer values
+. 
+. bro year pa_inter_exp_b patent_t9
+
+. * t9 is 1 patent lower in 1896, 1899, and 1921
+. * fig2: 715; table9: 712
+. tw line pa_inter_exp_b patent_t9 year
+
+. 
+. restore
+
+. 
+. *-------------------------------------------------------------------------------
+. *** Time series regressions
+. *-------------------------------------------------------------------------------
+. 
+. tsset race year
+       panel variable:  race (strongly balanced)
+        time variable:  year, 1870 to 1940
+                delta:  1 year
+
+. 
+. *** Table 1: application and three grant-year variables
+. est clear
+
+. qui reg D.lpatapppc Dllynchpc riot seglaw DLMRindex _iyear_1921  t DG1899 _iyear_1910 _iyear_1
+> 913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m1
+
+. qui reg D.lpatgrntpc Dllynchpc riot seglaw DLMRindex _iyear_1921  t DG1899 _iyear_1910 _iyear_
+> 1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m2
+
+. qui reg D.lpatgrant_fix Dllynchpc riot seglaw DLMRindex _iyear_1921  t DG1899 _iyear_1910 _iye
+> ar_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m3
+
+. qui reg D.lpatgrant_panel Dllynchpc riot seglaw DLMRindex _iyear_1921  t DG1899 _iyear_1910 _i
+> year_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m4
+
+. qui reg D.lpatgrntpc Dllynchpc riot seglaw L.Dllynchpc L.riot L.seglaw DLMRindex _iyear_1921  
+> t DG1899 _iyear_1910 _iyear_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m5
+
+. qui reg D.lpatgrant_fix Dllynchpc riot seglaw L.Dllynchpc L.riot L.seglaw DLMRindex _iyear_192
+> 1  t DG1899 _iyear_1910 _iyear_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m6
+
+. qui reg D.lpatgrant_panel Dllynchpc riot seglaw L.Dllynchpc L.riot L.seglaw DLMRindex _iyear_1
+> 921  t DG1899 _iyear_1910 _iyear_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m7
+
+. 
+. esttab m*, mtitle("Application" "Grant: time series" "Grant: fixed" "Grant: panel" "Grant: tim
+> e series" "Grant: fixed" "Grant: panel") label replace order(Dllynchpc riot seglaw L.Dllynchpc
+>  L.riot L.seglaw _iyear_1921) keep(riot Dllynchpc seglaw L.riot L.Dllynchpc L.seglaw _iyear_19
+> 21) se r2 star(* 0.1 ** 0.05 *** 0.01) b(%9.3f)
+
+------------------------------------------------------------------------------------------------
+> ------------------------------------
+                              (1)             (2)             (3)             (4)             (5
+> )             (6)             (7)   
+                      Application    Grant: tim~s    Grant: fixed    Grant: panel    Grant: tim~
+> s    Grant: fixed    Grant: panel   
+------------------------------------------------------------------------------------------------
+> ------------------------------------
+Lynchings                   0.131          -0.844*         -0.886*         -0.234          -0.54
+> 7          -0.592*         -0.105   
+                          (0.466)         (0.459)         (0.473)         (0.374)         (0.348
+> )         (0.351)         (0.319)   
+
+Major Riots                -0.018          -0.137*         -0.135*         -0.076          -0.10
+> 6**        -0.101*         -0.049   
+                          (0.059)         (0.069)         (0.068)         (0.049)         (0.053
+> )         (0.053)         (0.057)   
+
+Segregation laws           -0.025           0.033           0.033          -0.000           0.05
+> 9**         0.059**         0.016   
+                          (0.035)         (0.026)         (0.026)         (0.025)         (0.025
+> )         (0.024)         (0.028)   
+
+L.Lynchings                                                                                 0.33
+> 6           0.311           0.009   
+                                                                                          (0.416
+> )         (0.412)         (0.486)   
+
+L.Major Riots                                                                               0.25
+> 1***        0.264***        0.177** 
+                                                                                          (0.061
+> )         (0.063)         (0.081)   
+
+L.Segregation laws                                                                         -0.03
+> 6          -0.034          -0.022   
+                                                                                          (0.032
+> )         (0.031)         (0.036)   
+
+1921 dummy                  0.195          -0.459***       -0.480***       -0.980***       -0.35
+> 0*         -0.369*         -0.986***
+                          (0.288)         (0.169)         (0.168)         (0.167)         (0.196
+> )         (0.189)         (0.218)   
+------------------------------------------------------------------------------------------------
+> ------------------------------------
+Observations                   55              55              55              55              5
+> 5              55              55   
+R-squared                   0.197           0.301           0.297           0.214           0.55
+> 7           0.565           0.352   
+------------------------------------------------------------------------------------------------
+> ------------------------------------
+Standard errors in parentheses
+* p<0.1, ** p<0.05, *** p<0.01
+
+. esttab m* using "$tables/t6_timing_all.tex", mtitle("Application" "Grant: time series" "Grant:
+>  fixed" "Grant: panel" "Grant: time series" "Grant: fixed" "Grant: panel") label replace order
+> (Dllynchpc riot seglaw L.Dllynchpc L.riot L.seglaw _iyear_1921) keep(riot Dllynchpc seglaw L.r
+> iot L.Dllynchpc L.seglaw _iyear_1921) se r2 star(* 0.1 ** 0.05 *** 0.01) b(%9.3f)
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/tables/t6_timing_all.tex n
+> ot found)
+(output written to /home/michael/Dropbox/replications/cook_reanalysis/output/tables/t6_timing_al
+> l.tex)
+
+. 
+. *** Table 2: effect of 1921 Tulsa riot
+. gen d1919 = (year==1919)
+
+. gen d1920 = (year==1920)
+
+. gen d1922 = (year==1922)
+
+. gen d1923 = (year==1923)
+
+. lab var d1919 "1919 dummy"
+
+. lab var d1920 "1920 dummy"
+
+. lab var d1922 "1922 dummy"
+
+. lab var d1923 "1923 dummy"
+
+. 
+. est clear
+
+. qui reg D.lpatapppc Dllynchpc riot seglaw DLMRindex d1919 d1920 _iyear_1921 d1922 d1923 t DG18
+> 99 _iyear_1910 _iyear_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m1
+
+. qui reg D.lpatgrntpc Dllynchpc riot seglaw DLMRindex d1919 d1920 _iyear_1921 d1922 d1923 t DG1
+> 899 _iyear_1910 _iyear_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m2
+
+. qui reg D.lpatgrant_fix Dllynchpc riot seglaw DLMRindex d1919 d1920 _iyear_1921 d1922 d1923 t 
+> DG1899 _iyear_1910 _iyear_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m3
+
+. qui reg D.lpatgrant_panel Dllynchpc riot seglaw DLMRindex d1919 d1920 _iyear_1921 d1922 d1923 
+> t DG1899 _iyear_1910 _iyear_1913 _iyear_1928 if race==1 & year<1940, robust
+
+. est sto m4
+
+. esttab m1 m2 m3 m4, mtitle("Application" "Grant: time series" "Grant: fixed" "Grant: panel") l
+> abel replace order(Dllynchpc riot seglaw d1919 d1920 _iyear_1921 d1922 d1923) keep(riot Dllync
+> hpc seglaw d1919 d1920 _iyear_1921 d1922 d1923) se r2 star(* 0.1 ** 0.05 *** 0.01) b(%9.3f) 
+
+------------------------------------------------------------------------------------
+                              (1)             (2)             (3)             (4)   
+                      Application    Grant: tim~s    Grant: fixed    Grant: panel   
+------------------------------------------------------------------------------------
+Lynchings                  -0.050          -0.620          -0.641           0.006   
+                          (0.505)         (0.399)         (0.401)         (0.315)   
+
+Major Riots                -0.102          -0.209***       -0.205***       -0.097   
+                          (0.072)         (0.071)         (0.066)         (0.082)   
+
+Segregation laws           -0.027           0.045*          0.046*          0.010   
+                          (0.038)         (0.026)         (0.026)         (0.025)   
+
+1919 dummy                  1.029**         1.058**         1.035**         0.417   
+                          (0.472)         (0.430)         (0.395)         (0.509)   
+
+1920 dummy                 -0.705***        2.094***        2.230***        1.728***
+                          (0.211)         (0.209)         (0.207)         (0.184)   
+
+1921 dummy                  0.254          -0.409**        -0.430**        -1.004***
+                          (0.331)         (0.200)         (0.198)         (0.204)   
+
+1922 dummy                  0.043           0.289           0.284           0.619** 
+                          (0.281)         (0.244)         (0.245)         (0.251)   
+
+1923 dummy                 -0.220           0.042           0.034           0.071   
+                          (0.198)         (0.187)         (0.188)         (0.188)   
+------------------------------------------------------------------------------------
+Observations                   55              55              55              55   
+R-squared                   0.247           0.509           0.524           0.375   
+------------------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.1, ** p<0.05, *** p<0.01
+
+. esttab m1 m2 m3 m4 using "$tables/d1921_all.tex", mtitle("Application" "Grant: time series" "G
+> rant: fixed" "Grant: panel") label replace order(Dllynchpc riot seglaw d1919 d1920 _iyear_1921
+>  d1922 d1923) keep(riot Dllynchpc seglaw d1919 d1920 _iyear_1921 d1922 d1923) se r2 star(* 0.1
+>  ** 0.05 *** 0.01) b(%9.3f) 
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/tables/d1921_all.tex not f
+> ound)
+(output written to /home/michael/Dropbox/replications/cook_reanalysis/output/tables/d1921_all.te
+> x)
+
+. 
+. *-------------------------------------------------------------------------------
+. *** Panel data regressions
+. *-------------------------------------------------------------------------------
+. 
+. *-------------------------------------------------------------------------------
+. * calculating completely balanced panel
+. * https://en.wikipedia.org/wiki/List_of_U.S._states_by_date_of_admission_to_the_Union
+. * https://www.statista.com/statistics/1043617/number-us-states-by-year/
+. 
+. use "$data/pats_state_regs_wcontrol.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. labelbook
+
+------------------------------------------------------------------------------------------------
+value label statenolabel 
+------------------------------------------------------------------------------------------------
+
+      values                                    labels
+       range:  [1,51]                    string length:  [2,2]
+           N:  51                unique at full length:  yes
+        gaps:  no                  unique at length 12:  yes
+  missing .*:  0                           null string:  no
+                               leading/trailing blanks:  no
+                                    numeric -> numeric:  no
+  definition
+           1   AL
+           2   AK
+           3   AZ
+           4   AR
+           5   CA
+           6   CO
+           7   CT
+           8   DE
+           9   DC
+          10   FL
+          11   GA
+          12   HI
+          13   ID
+          14   IL
+          15   IN
+          16   IA
+          17   KS
+          18   KY
+          19   LA
+          20   ME
+          21   MD
+          22   MA
+          23   MI
+          24   MN
+          25   MS
+          26   MO
+          27   MT
+          28   NE
+          29   NV
+          30   NH
+          31   NJ
+          32   NM
+          33   NY
+          34   NC
+          35   ND
+          36   OH
+          37   OK
+          38   OR
+          39   PA
+          40   RI
+          41   SC
+          42   SD
+          43   TN
+          44   TX
+          45   UT
+          46   VT
+          47   VA
+          48   WA
+          49   WV
+          50   WI
+          51   WY
+
+   variables:  stateno
+
+
+. 
+. * don't have state names, so need to manually copy label values
+.   * order them by entry year (year admitted into US)
+. 
+. /*
+> pre-1870: 38 including DC
+> 8 DE
+> 39 PA
+> 31 NJ
+> 11 GA
+> 7 CT
+> 22 MA
+> 21 MD
+> 41 SC
+> 30 NH
+> 47 VA
+> 33 NY
+> 34 NC
+> 40 RI
+> 46 VT
+> 18 KY
+> 43 TN
+> 36 OH
+> 19 LA
+> 15 IN
+> 25 MS
+> 14 IL
+> 1 AL
+> 20 ME
+> 26 MO
+> 4 AR
+> 23 MI
+> 10 FL
+> 44 TX
+> 16 IA
+> 50 WI
+> 5 CA
+> 24 MN
+> 38 OR
+> 17 KS
+> 49 WV
+> 29 NV
+> 28 NE
+> 9 DC
+> * Cook has DC from 1871
+> 
+> post-1870
+> 1876:
+> 6 CO
+> 
+> 1889:
+> 35 ND
+> 42 SD
+> 27 MT
+> 48 WA
+> 
+> 1890:
+> 13 ID
+> 51 WY
+> 
+> 1896:
+> 45 UT
+> 
+> 1907:
+> 37 OK
+> 
+> 1912:
+> 32 NM
+> 3 AZ
+> 
+> 1959:
+> 2 AK
+> 12 HI
+> */
+. 
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. preserve
+
+. collapse stateno, by(year)
+
+. 
+. gen complete_panel = 38 if year<1876
+(65 missing values generated)
+
+. replace complete_panel = 39 if year>=1876 & year<1889
+(13 real changes made)
+
+. replace complete_panel = 43 if year>=1889 & year<1890
+(1 real change made)
+
+. replace complete_panel = 45 if year>=1890 & year<1896
+(6 real changes made)
+
+. replace complete_panel = 46 if year>=1896 & year<1907
+(11 real changes made)
+
+. replace complete_panel = 47 if year>=1907 & year<1912
+(5 real changes made)
+
+. replace complete_panel = 49 if year>=1912
+(29 real changes made)
+
+. 
+. collapse (sum) complete_panel
+
+. su
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+complete_p~l |          1        3210           .       3210       3210
+
+. * 3210
+. restore
+
+. 
+. * complete panel sample size: 3210
+.   * 1870-1940, span of 71 years
+. * (1876-1870)*38 + (1889-1876)*39 + (1890-1889)*43 + (1896-1890)*45 + (1907-1896)*46 + (1912-1
+> 907)*47 + (1941-1912)*49
+. 
+. 
+. *-------------------------------------------------------------------------------
+. *** plot number of observations by state and year
+. 
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. 
+. * observations by state
+. preserve
+
+. collapse (count) count=year, by(stateno)
+
+. set scheme plotplainblind
+
+. scatter count stateno, xtitle("State ID") ytitle("") 
+
+. graph export "$figures/obs_state_color.eps", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_state_color.ep
+> s not found)
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_state_color.eps writ
+> ten in EPS format)
+
+. graph export "$figures/obs_state_color.png", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_state_color.pn
+> g not found)
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_state_color.png writ
+> ten in PNG format)
+
+. graph export "$figures/obs_state_color.pdf", replace
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_state_color.pdf writ
+> ten in PDF format)
+
+. restore
+
+. 
+. * observations by year
+. preserve
+
+. collapse (count) count=stateno, by(year)
+
+. set scheme plotplainblind
+
+. scatter count year, xtitle("") ytitle("") 
+
+. graph export "$figures/obs_year_color.eps", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_year_color.eps
+>  not found)
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_year_color.eps writt
+> en in EPS format)
+
+. graph export "$figures/obs_year_color.png", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_year_color.png
+>  not found)
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_year_color.png writt
+> en in PNG format)
+
+. graph export "$figures/obs_year_color.pdf", replace
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_year_color.pdf writt
+> en in PDF format)
+
+. restore
+
+. 
+. *-------------------------------------------------------------------------------
+. *** plot number of observations by region, for actual data and complete and balanced panel
+. 
+. * calculating complete and balanced panel by region
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. 
+. * fix errors
+. * state 9 has regmatl=0.33 and regs=1 in 1888; regs=1 for all other years
+. replace regmatl=0 if year==1888 & stateno==9
+(1 real change made)
+
+. * state 14 is regmw=1, except for 1886 when it's regmw=0.5 and regs=0.5
+. replace regs=0 if year==1886 & stateno==14
+(1 real change made)
+
+. replace regmw=1 if year==1886 & stateno==14
+(1 real change made)
+
+. 
+. gen region = .
+(430 missing values generated)
+
+. replace region = 1 if (regs==1)
+(125 real changes made)
+
+. replace region = 2 if (regmw==1)
+(130 real changes made)
+
+. replace region = 3 if (regne==1)
+(35 real changes made)
+
+. replace region = 4 if (regw==1)
+(34 real changes made)
+
+. replace region = 5 if (regmatl==1)
+(106 real changes made)
+
+. label define reg_label 1 "South" 2 "Midwest" 3 "Northeast" 4 "West" 5 "Mid-Atlantic"
+
+. label values region reg_label
+
+. 
+. * from wikipedia, linked above
+. gen entry_year = .
+(430 missing values generated)
+
+. replace entry_year = 1870 if stateno==8 | stateno==39 | stateno==31 | stateno==11 | stateno==7
+>  | stateno==22 | stateno==21 | stateno==41 | stateno==30 | stateno==47 | stateno==33 | stateno
+> ==34 | stateno==40 | stateno==46 | stateno==18 | stateno==43 | stateno==36 | stateno==19 | sta
+> teno==15 | stateno==25 | stateno==14 | stateno==1 | stateno==20 | stateno==26 | stateno==4 | s
+> tateno==23 | stateno==10 | stateno==44 | stateno==16 | stateno==50 | stateno==5 | stateno==24 
+> | stateno==38 | stateno==17 | stateno==49 | stateno==29 | stateno==28 | stateno==9
+(410 real changes made)
+
+. replace entry_year = 1876 if stateno==6
+(2 real changes made)
+
+. replace entry_year = 1889 if stateno==35 | stateno==42 | stateno==27 | stateno==48
+(5 real changes made)
+
+. replace entry_year = 1890 if stateno==13 | stateno==51
+(4 real changes made)
+
+. replace entry_year = 1896 if stateno==45
+(2 real changes made)
+
+. replace entry_year = 1907 if stateno==37
+(4 real changes made)
+
+. replace entry_year = 1912 if stateno==32 | stateno==3
+(3 real changes made)
+
+. 
+. gen duration = 1941-entry_year
+
+. 
+. preserve
+
+. * duration by state and region
+. collapse duration, by(stateno region)
+
+. * total duration by region
+. collapse (sum) duration, by(region)
+
+. bro
+
+. * numbers for complete_balanced
+. restore
+
+. 
+. preserve
+
+. collapse (count) count=stateno, by(region)
+
+. 
+. * manually grab numbers from browse above
+. gen complete_balanced = 1028 if region==1
+(4 missing values generated)
+
+. replace complete_balanced = 833 if region==2
+(1 real change made)
+
+. replace complete_balanced = 426 if region==3
+(1 real change made)
+
+. replace complete_balanced = 639 if region==4
+(1 real change made)
+
+. replace complete_balanced = 426 if region==5
+(1 real change made)
+
+. 
+. lab var count "Actual data"
+
+. lab var complete_balanced "Balanced panel"
+
+. 
+. * Observations by region
+. set scheme plotplainblind
+
+. tw (scatter count region, xlabel(1 "South" 2 "Midwest" 3 "Northeast" 4 "West" 5 "Mid-Atlantic"
+> ) xtitle("") ytitle("Actual data", axis(1)) yaxis(1)) (scatter complete_balanced region, yaxis
+> (2) ytitle("Balanced panel", axis(2))), legend(pos(6))
+
+. graph export "$figures/obs_region_color.eps", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_region_color.e
+> ps not found)
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_region_color.eps wri
+> tten in EPS format)
+
+. graph export "$figures/obs_region_color.png", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_region_color.p
+> ng not found)
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_region_color.png wri
+> tten in PNG format)
+
+. graph export "$figures/obs_region_color.pdf", replace
+(file /home/michael/Dropbox/replications/cook_reanalysis/output/figures/obs_region_color.pdf wri
+> tten in PDF format)
+
+. 
+. restore
+
+. 
+. *-------------------------------------------------------------------------------
+. *** Compare panel data to time series
+. *-------------------------------------------------------------------------------
+. 
+. use "$data/pats_time_series.dta", clear
+
+. collapse (sum) riot seglaw if race==1
+
+. su
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+        riot |          1          35           .         35         35
+      seglaw |          1         290           .        290        290
+
+. * 35 riots, 290 seglaws
+. 
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. collapse (sum) riot seglaw
+
+. su
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+        riot |          1           5           .          5          5
+      seglaw |          1    19.33333           .   19.33333   19.33333
+
+. * 5 riots, 19.33 seglaws
+. 
+. *-------------------------------------------------------------------------------
+. *** Table 3
+. *-------------------------------------------------------------------------------
+. 
+. *** create dataset for variables missing in either grant-year or application-year data
+. 
+. *** estbnumpc
+. use "$data/pats_state_regs_wcontrol.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. su year gyear
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+        year |      1,466    1905.127    18.14256       1873       1939
+       gyear |      1,418    1906.176    18.72081       1873       1947
+
+. * no applications or grants before 1873
+.   * but in pats_state_regs_AAonly.dta there are 8 state-year obs with patents in 1870-72
+. replace gyear = year if missing(gyear)
+(48 real changes made)
+
+. * these obs have 0 patents
+. keep gyear stateno estbnumpc 
+
+. rename gyear year
+
+. collapse estbnumpc, by(stateno year)
+
+. save "$data/estbnumpc.dta", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/data/estbnumpc.dta not found)
+file /home/michael/Dropbox/replications/cook_reanalysis/data/estbnumpc.dta saved
+
+. 
+. *** black share
+. * Cook's data has many missing observations; to fill these in, I assign the modal value per de
+> cade to all years within a decade. Almost all values within a decade are the same.
+. * It's possible to reconstruct the variable from the raw population data.
+.   * need state-year-race population
+.   * https://www.census.gov/content/dam/Census/library/working-papers/2002/demo/POP-twps0056.pd
+> f
+. 
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. 
+. keep year stateno blksh
+
+. fillin stateno year
+
+. 
+. gen decade = .
+(3,479 missing values generated)
+
+. replace decade = 1 if inrange(year, 1870,1879)
+(490 real changes made)
+
+. replace decade = 2 if inrange(year, 1880, 1889)
+(490 real changes made)
+
+. replace decade = 3 if inrange(year, 1890, 1899)
+(490 real changes made)
+
+. replace decade = 4 if inrange(year, 1900, 1909)
+(490 real changes made)
+
+. replace decade = 5 if inrange(year, 1910, 1919)
+(490 real changes made)
+
+. replace decade = 6 if inrange(year, 1920, 1929)
+(490 real changes made)
+
+. replace decade = 7 if inrange(year, 1930, 1939)
+(490 real changes made)
+
+. replace decade = 8 if inrange(year, 1940, 1949)
+(49 real changes made)
+
+. 
+. egen decade_blksh = mode(blksh ), by(decade stateno)
+Warning: at least one group contains all missing values or contains multiple modes.  Generating
+missing values for the mode of these groups.  Use the missing, maxmode, minmode, or nummode()
+options to control this behavior.
+(1,894 missing values generated)
+
+. 
+. 
+. gen tag=1 if blksh != decade_blksh  & missing(blksh )==0
+(3,474 missing values generated)
+
+. * not consistent within decade for some observations
+. 
+. keep year stateno decade_blksh
+
+. rename decade_blksh blksh
+
+. 
+. save "$data/blksh.dta", replace
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/data/blksh.dta not found)
+file /home/michael/Dropbox/replications/cook_reanalysis/data/blksh.dta saved
+
+. 
+. *-------------------------------------------
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. merge 1:1 stateno year using "$data/estbnumpc.dta"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                           178
+        from master                         8  (_merge==1)
+        from using                        170  (_merge==2)
+
+    matched                               422  (_merge==3)
+    -----------------------------------------
+
+. drop if _merge ==2
+(170 observations deleted)
+
+. drop _merge
+
+. 
+. xtset stateno year
+       panel variable:  stateno (unbalanced)
+        time variable:  year, 1870 to 1940, but with gaps
+                delta:  1 unit
+
+. 
+. est clear
+
+. qui: xtreg patent riot illit estbnumpc blksh  regs regmw regne regw year1910 year1913 year1928
+> , re  vce(cl stateno)
+
+. est sto m1
+
+. * 430 obs in dataset, 422 obs in regression: missing 8 obs from 1870-72, since estbnumpc is no
+> t defined
+. 
+. tab riot if e(sample)
+
+(mean) riot |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        418       99.05       99.05
+          1 |          3        0.71       99.76
+          2 |          1        0.24      100.00
+------------+-----------------------------------
+      Total |        422      100.00
+
+. * 5 riots in sample
+. 
+. qui: xtreg patent riot L.riot illit estbnumpc blksh  regs regmw regne regw year1910 year1913 y
+> ear1928, re  vce(cl stateno)
+
+. est sto m3
+
+. tab riot if e(sample)
+
+(mean) riot |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        191       98.96       98.96
+          1 |          2        1.04      100.00
+------------+-----------------------------------
+      Total |        193      100.00
+
+. * only 2 riots in this regression
+. 
+. * application year
+. use "$data/pats_state_regs_wcontrol.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. keep if race==1
+(730 observations deleted)
+
+. collapse (sum) patent assn mech elec patsth (mean)  lynchpc2  riot seglaw2 illit regmatl regs 
+> regmw regne regw estbnumpc, by(stateno year)
+
+. xtset stateno year
+       panel variable:  stateno (unbalanced)
+        time variable:  year, 1873 to 1939, but with gaps
+                delta:  1 unit
+
+. 
+. gen year1910 = (year==1910)
+
+. gen year1913 = (year==1913)
+
+. gen year1928 = (year==1928)
+
+. 
+. merge 1:1 stateno year using "$data/blksh.dta"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                         3,040
+        from master                         0  (_merge==1)
+        from using                      3,040  (_merge==2)
+
+    matched                               439  (_merge==3)
+    -----------------------------------------
+
+. drop if _merge==2
+(3,040 observations deleted)
+
+. drop _merge
+
+. 
+. qui: xtreg patent riot illit estbnumpc blksh  regs regmw regne regw year1910 year1913 year1928
+> , re  vce(cl stateno)
+
+. est sto m2
+
+. * 439 obs in dataset, 433 obs in regression: missing 6 obs because blksh is missing
+.   * 10/FL 1928, 11/GA 1909, 14/IL 1919, 26/MO 1919, 42/SD 1918, 43/TN 1919
+.   * just because of the imbalanced panel, and blkshare is only defined for years with applicat
+> ions, so missing grant years
+. 
+. tab riot if e(sample)
+
+(mean) riot |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        430       99.31       99.31
+          1 |          2        0.46       99.77
+          2 |          1        0.23      100.00
+------------+-----------------------------------
+      Total |        433      100.00
+
+. * 4 riots in sample
+. 
+. lab var riot "Major riots"
+
+. lab var illit "Illiteracy rate"
+
+. lab var estbnumpc "Number of firms"
+
+. 
+. esttab m1 m2 m3, mtitle("Grant" "Application" "Grant") label replace order(riot L.riot) keep(r
+> iot L.riot) se star(* 0.1 ** 0.05 *** 0.01) b(%9.3f)
+
+--------------------------------------------------------------------
+                              (1)             (2)             (3)   
+                            Grant     Application           Grant   
+--------------------------------------------------------------------
+Major riots                -0.362***        0.334          -0.370   
+                          (0.070)         (0.578)         (0.243)   
+
+L.Major riots                                               1.502***
+                                                          (0.236)   
+--------------------------------------------------------------------
+Observations                  422             433             193   
+--------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.1, ** p<0.05, *** p<0.01
+
+. esttab m1 m2 m3 using "$tables/t7_timing.tex", mtitle("Grant" "Application" "Grant") label rep
+> lace order(riot L.riot) keep(riot L.riot) se star(* 0.1 ** 0.05 *** 0.01) b(%9.3f)
+(note: file /home/michael/Dropbox/replications/cook_reanalysis/output/tables/t7_timing.tex not f
+> ound)
+(output written to /home/michael/Dropbox/replications/cook_reanalysis/output/tables/t7_timing.te
+> x)
+
+. * note: esttab doesn't store R2 from xtreg, re (random effects)
+. 
+. *-------------------------------------------------------------------------------
+. *** other results
+. *-------------------------------------------------------------------------------
+. 
+. *---------------------
+. *** 12 states with patent=0; each has two observations, one in 1900 and one in 1930.
+. 
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. 
+. tab patent
+
+      (sum) |
+     patent |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         24        5.58        5.58
+          1 |        255       59.30       64.88
+          2 |         80       18.60       83.49
+          3 |         38        8.84       92.33
+          4 |         15        3.49       95.81
+          5 |          5        1.16       96.98
+          6 |          8        1.86       98.84
+          7 |          1        0.23       99.07
+          8 |          3        0.70       99.77
+          9 |          1        0.23      100.00
+------------+-----------------------------------
+      Total |        430      100.00
+
+. tab year if patent==0
+
+     patent |
+ grant year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       1900 |         12       50.00       50.00
+       1930 |         12       50.00      100.00
+------------+-----------------------------------
+      Total |         24      100.00
+
+. bro if patent==0
+
+. * 24 obs with patent=0, in 1900 and 930
+. 
+. preserve
+
+. collapse (sum) patent, by(stateno)
+
+. count if patent==0
+  12
+
+. * 12 states with 0 patents
+. restore
+
+. 
+. *---------------------
+. *** Table 9 says 714 patents, but only 712 in the data
+. use "$data/pats_state_regs_wcontrol.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. 
+. tab patent if race==1
+
+  Number of |
+    patents |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         24        3.26        3.26
+          1 |        712       96.74      100.00
+------------+-----------------------------------
+      Total |        736      100.00
+
+. * 712 patents
+. * again have 24 obs with patent=0
+. 
+. tab patent if race==0
+
+  Number of |
+    patents |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         24        3.29        3.29
+          1 |        706       96.71      100.00
+------------+-----------------------------------
+      Total |        730      100.00
+
+. * onl 706 patents for whites
+. 
+. * p.241: "Specifically, I draw a random sample of 714 patents by application year of patents b
+> y African American inventors from the USPTO database using Google Patents."
+. 
+. *---------------------
+. *** time gap between applications and grants
+. gen lag = gyear - year 
+(48 missing values generated)
+
+. ttest lag, by (race)
+
+Two-sample t test with equal variances
+------------------------------------------------------------------------------
+   Group |     Obs        Mean    Std. Err.   Std. Dev.   [95% Conf. Interval]
+---------+--------------------------------------------------------------------
+       0 |     706     1.36119    .0546567    1.452265     1.25388    1.468499
+       1 |     712    1.405899    .0548983     1.46487    1.298117    1.513681
+---------+--------------------------------------------------------------------
+combined |   1,418    1.383639    .0387256    1.458264    1.307673    1.459605
+---------+--------------------------------------------------------------------
+    diff |           -.0447091    .0774701               -.1966776    .1072595
+------------------------------------------------------------------------------
+    diff = mean(0) - mean(1)                                      t =  -0.5771
+Ho: diff = 0                                     degrees of freedom =     1416
+
+    Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = 0.2820         Pr(|T| > |t|) = 0.5640          Pr(T > t) = 0.7180
+
+. * see fn 15: 1.4 for whites and blacks
+. 
+. *---------------------
+. *** different violence variables in grant-year and application-year data
+. 
+. * segregation laws: annual in grant data, cumulative in application data
+. 
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. bro year stateno seglaw
+
+. 
+. use "$data/pats_state_regs_wcontrol.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. codebook seglaw2
+
+------------------------------------------------------------------------------------------------
+seglaw2                     Cumulative number of state Jim Crow laws passed up through that year
+------------------------------------------------------------------------------------------------
+
+                  type:  numeric (float)
+
+                 range:  [0,18]                       units:  1
+         unique values:  19                       missing .:  0/1,466
+
+                  mean:   2.00819
+              std. dev:    3.4562
+
+           percentiles:        10%       25%       50%       75%       90%
+                                 0         0         0         2         7
+
+. keep if race==1
+(730 observations deleted)
+
+. collapse (sum) patent assn mech elec patsth (mean)  lynchpc2  riot seglaw2 illit regmatl regs 
+> regmw regne regw estbnumpc, by(stateno year)
+
+. bro year stateno seglaw2
+
+. 
+. * lynchings: different, unclear why.
+. * For example, California (stateno==5) has no lynchings in the Table 7 data, but nonzero lynch
+> ings in every year in the Table 9 data.
+. 
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. bro year stateno lynchrevpc if stateno==5
+
+. * 0 lynchings
+. 
+. use "$data/pats_state_regs_wcontrol.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. keep if race==1
+(730 observations deleted)
+
+. collapse (sum) patent assn mech elec patsth (mean)  lynchpc2  riot seglaw2 illit regmatl regs 
+> regmw regne regw estbnumpc, by(stateno year)
+
+. bro year stateno lynchpc2 if stateno==5
+
+. * nonzero lynchings in every year
+. 
+. *-------------------------------------------------------------------------------
+. *** Table 8
+. use "$data/pats_state_regs_AAonly.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. 
+. qui xtreg assn lynchrevpc riot seglaw illit blksh ind regs regmw regne regw  grinvent year1910
+>  year1913 year1928, re vce(cl stateno)
+
+. est sto t81
+
+. qui xtreg mech lynchrevpc riot seglaw illit blksh ind regs regmw regne regw year1910 year1913 
+> year1928, re vce(cl stateno)
+
+. est sto t82
+
+. qui xtreg elec lynchrevpc riot seglaw illit blksh ind regs regmw regne regw year1910 year1913 
+> year1928, re vce(cl stateno)
+
+. est sto t83
+
+. qui xtreg patsth lynchrevpc riot seglaw illit blksh ind regs regmw regne regw  year1910 year19
+> 13 year1928, re vce(cl stateno)
+
+. est sto t84
+
+. * Patents: grant year
+. esttab t81 t82 t83 t84, mtitle("Assigned" "Mechanical" "Electrical" "Southern") label replace 
+> order(lynchrevpc riot seglaw illit ind) keep(lynchrevpc riot seglaw) se star(* 0.1 ** 0.05 ***
+>  0.01) b(%9.3f) title("Patents: grant year")
+
+Patents: grant year
+------------------------------------------------------------------------------------
+                              (1)             (2)             (3)             (4)   
+                         Assigned      Mechanical      Electrical        Southern   
+------------------------------------------------------------------------------------
+(mean) lynchrevpc,~r        0.008          -0.018          -0.014          -0.011   
+                          (0.016)         (0.016)         (0.009)         (0.011)   
+
+(mean) riot                -0.538*          0.202          -0.042          -0.102   
+                          (0.288)         (0.125)         (0.124)         (0.093)   
+
+(mean) seglaw               0.090          -0.174**        -0.044          -0.177***
+                          (0.088)         (0.084)         (0.027)         (0.053)   
+------------------------------------------------------------------------------------
+Observations                  429             429             429             429   
+------------------------------------------------------------------------------------
+Standard errors in parentheses
+* p<0.1, ** p<0.05, *** p<0.01
+
+. * N is off by one, get slightly different results
+. 
+. *-------------------------------------------------------------------------------
+. *** Table 9
+. * Cook's code outputs the negative binomial regression results, but Table 9 reports the averag
+> e marginal effects
+. * the code below reports the marginal effects, but they don't match the results in the paper.
+. 
+. use "$data/pats_state_regs_wcontrol.dta", clear
+(This file has data on black inventors' patents and state variables, 1870-1940)
+
+. collapse (sum) patent assn mech elec patsth (mean)  lynchpc2  riot seglaw2 illit regmatl regs 
+> regmw regne regw estbnumpc, by(stateno race)
+
+. 
+. ***Blacks
+. preserve
+
+. 
+. keep if race==1
+(49 observations deleted)
+
+. 
+. qui nbreg patent lynchpc2  riot seglaw2 illit regmw regne regs regw estbnumpc, robust nolog
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -6.580241   4.466569    -1.47   0.141    -15.33456    2.174073
+        riot |  -37.56284   67.87317    -0.55   0.580    -170.5918    95.46613
+     seglaw2 |   .7322975   1.065945     0.69   0.492    -1.356917    2.821512
+       illit |   -24.8159    19.0751    -1.30   0.193    -62.20241    12.57062
+   estbnumpc |   9620.348   4263.695     2.26   0.024     1263.658    17977.04
+------------------------------------------------------------------------------
+
+. estimates store r1cw
+
+. 
+. qui nbreg assn lynchpc2  riot seglaw2 illit regmw regne regs regw estbnumpc, robust nolog
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -1.986916    2.02601    -0.98   0.327    -5.957822     1.98399
+        riot |   -42.0373   51.34775    -0.82   0.413     -142.677    58.60244
+     seglaw2 |  -.0498571   .4777799    -0.10   0.917    -.9862884    .8865743
+       illit |  -16.06863   10.28191    -1.56   0.118    -36.22079    4.083537
+   estbnumpc |   3300.225   1441.754     2.29   0.022     474.4388    6126.011
+------------------------------------------------------------------------------
+
+. estimates store r1cx
+
+. 
+. qui nbreg mech lynchpc2  riot seglaw2 illit regmw regne regs regw estbnumpc, robust nolog
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -4.621242   2.770555    -1.67   0.095    -10.05143    .8089454
+        riot |  -91.94198   63.79196    -1.44   0.150    -216.9719    33.08797
+     seglaw2 |   .4616693   .4918628     0.94   0.348    -.5023641    1.425703
+       illit |  -8.039382    9.82253    -0.82   0.413    -27.29119    11.21242
+   estbnumpc |   4430.224   2224.772     1.99   0.046     69.75083    8790.698
+------------------------------------------------------------------------------
+
+. estimates store r1cy
+
+. 
+. qui nbreg elec lynchpc2  riot seglaw2 illit regmw regne regs regw estbnumpc, robust nolog
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |   -1.71303   .7343788    -2.33   0.020    -3.152386   -.2736736
+        riot |    13.1667    9.44182     1.39   0.163    -5.338927    31.67233
+     seglaw2 |   .3419723   .1933209     1.77   0.077    -.0369296    .7208743
+       illit |  -13.15871   6.027349    -2.18   0.029     -24.9721   -1.345326
+   estbnumpc |   1035.475   409.5802     2.53   0.011     232.7128    1838.238
+------------------------------------------------------------------------------
+
+. estimates store r1cz
+
+. 
+. qui nbreg patsth lynchpc2  riot seglaw2 illit estbnumpc, robust nolog
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -11500.33   61083.14    -0.19   0.851    -131221.1    108220.4
+        riot |   684622.8    4141692     0.17   0.869     -7432944     8802190
+     seglaw2 |   3729.784   21770.15     0.17   0.864    -38938.92    46398.48
+       illit |   83062.58   457494.1     0.18   0.856    -813609.3    979734.5
+   estbnumpc |   -4266766   2.42e+07    -0.18   0.860    -5.16e+07    4.31e+07
+------------------------------------------------------------------------------
+
+. estimates store r1caa
+
+. 
+. esttab r1cw r1cx r1cy r1cz r1caa, nomtitle label replace order(lynchpc2 riot seglaw2 illit est
+> bnumpc) keep(lynchpc2 riot seglaw2 illit estbnumpc) se star(* 0.1 ** 0.05 *** 0.01) b(%9.3f) t
+> itle("Black patents")
+
+Black patents
+------------------------------------------------------------------------------------------------
+> ----
+                              (1)             (2)             (3)             (4)             (5
+> )   
+------------------------------------------------------------------------------------------------
+> ----
+(mean) lynchpc2            -6.580          -1.987          -4.621*         -1.713**     -1.15e+0
+> 4   
+                          (4.467)         (2.026)         (2.771)         (0.734)     (61083.138
+> )   
+
+(mean) riot               -37.563         -42.037         -91.942          13.167        6.85e+0
+> 5   
+                         (67.873)        (51.348)        (63.792)         (9.442)      (4.14e+06
+> )   
+
+(mean) seglaw2              0.732          -0.050           0.462           0.342*       3729.78
+> 4   
+                          (1.066)         (0.478)         (0.492)         (0.193)     (21770.145
+> )   
+
+(mean) illit              -24.816         -16.069          -8.039         -13.159**     83062.58
+> 4   
+                         (19.075)        (10.282)         (9.823)         (6.027)      (4.57e+05
+> )   
+
+(mean) estbnumpc         9620.348**      3300.225**      4430.224**      1035.475**     -4.27e+0
+> 6   
+                       (4263.695)      (1441.754)      (2224.772)       (409.580)      (2.42e+07
+> )   
+------------------------------------------------------------------------------------------------
+> ----
+Observations                   49              49              49              49              4
+> 9   
+------------------------------------------------------------------------------------------------
+> ----
+Standard errors in parentheses
+* p<0.1, ** p<0.05, *** p<0.01
+
+. 
+. restore
+
+. 
+. *** Whites
+. preserve
+
+. 
+. keep if race==0
+(49 observations deleted)
+
+. 
+. nbreg patent lynchpc2  riot seglaw2 illit regmw regne regs regw estbnumpc, robust nolog
+
+Negative binomial regression                    Number of obs     =         49
+                                                Wald chi2(9)      =     106.83
+Dispersion           = mean                     Prob > chi2       =     0.0000
+Log pseudolikelihood =  -147.7283               Pseudo R2         =     0.1163
+
+------------------------------------------------------------------------------
+             |               Robust
+      patent |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -.1730911    1.56264    -0.11   0.912    -3.235809    2.889627
+        riot |  -2.011763   5.432713    -0.37   0.711    -12.65968    8.636159
+     seglaw2 |     .08021    .071596     1.12   0.263    -.0601156    .2205356
+       illit |  -5.283213   3.613773    -1.46   0.144    -12.36608    1.799652
+       regmw |   .3271487   .6256719     0.52   0.601    -.8991456    1.553443
+       regne |   -3.11852   .7739547    -4.03   0.000    -4.635443   -1.601597
+        regs |    .382585   .8875974     0.43   0.666    -1.357074    2.122244
+        regw |   -2.07746   .9218836    -2.25   0.024    -3.884319   -.2706015
+   estbnumpc |   686.8236   171.0655     4.01   0.000     351.5413    1022.106
+       _cons |   .5635966   1.017243     0.55   0.580    -1.430163    2.557357
+-------------+----------------------------------------------------------------
+    /lnalpha |   .1759781   .2124892                     -.2404931    .5924493
+-------------+----------------------------------------------------------------
+       alpha |   1.192412   .2533747                      .7862401    1.808412
+------------------------------------------------------------------------------
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -2.949186   26.53637    -0.11   0.912    -54.95952    49.06115
+        riot |  -34.27712   94.86807    -0.36   0.718    -220.2151    151.6609
+     seglaw2 |   1.366646   1.317637     1.04   0.300    -1.215876    3.949167
+       illit |  -90.01721   66.83768    -1.35   0.178    -221.0167    40.98223
+   estbnumpc |   11702.34   5135.609     2.28   0.023      1636.73    21767.95
+------------------------------------------------------------------------------
+
+. estimates store r0cw
+
+. 
+. nbreg assn lynchpc2  riot seglaw2 illit regmw regne regs regw estbnumpc, robust nolog
+
+Negative binomial regression                    Number of obs     =         49
+                                                Wald chi2(9)      =      97.38
+Dispersion           = mean                     Prob > chi2       =     0.0000
+Log pseudolikelihood = -91.214144               Pseudo R2         =     0.1560
+
+------------------------------------------------------------------------------
+             |               Robust
+        assn |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -8.603683   5.263335    -1.63   0.102    -18.91963    1.712264
+        riot |   1.437574   14.10535     0.10   0.919     -26.2084    29.08355
+     seglaw2 |  -.0106464   .0904172    -0.12   0.906     -.187861    .1665681
+       illit |   2.750936   6.112785     0.45   0.653    -9.229901    14.73177
+       regmw |   .3920112   .6243741     0.63   0.530    -.8317397    1.615762
+       regne |  -3.177592   .7436063    -4.27   0.000    -4.635034   -1.720151
+        regs |   .0070537   .9414733     0.01   0.994      -1.8382    1.852307
+        regw |  -1.807573   1.034958    -1.75   0.081    -3.836054    .2209081
+   estbnumpc |   447.6287   171.1276     2.62   0.009     112.2247    783.0327
+       _cons |    .114282   1.040561     0.11   0.913    -1.925181    2.153745
+-------------+----------------------------------------------------------------
+    /lnalpha |   .2638681   .3094005                     -.3425457    .8702819
+-------------+----------------------------------------------------------------
+       alpha |   1.301956    .402826                      .7099607    2.387584
+------------------------------------------------------------------------------
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -34.79249   24.04363    -1.45   0.148    -81.91715    12.33217
+        riot |   5.813415    56.9188     0.10   0.919    -105.7454    117.3722
+     seglaw2 |  -.0430532   .3651156    -0.12   0.906    -.7586666    .6725603
+       illit |   11.12453   24.83559     0.45   0.654    -37.55234     59.8014
+   estbnumpc |   1810.168   846.9327     2.14   0.033     150.2108    3470.126
+------------------------------------------------------------------------------
+
+. estimates store r0cx
+
+. 
+. nbreg mech lynchpc2  riot seglaw2 illit regmw regne regs regw estbnumpc, robust nolog
+
+Negative binomial regression                    Number of obs     =         49
+                                                Wald chi2(9)      =      63.77
+Dispersion           = mean                     Prob > chi2       =     0.0000
+Log pseudolikelihood = -103.65557               Pseudo R2         =     0.1340
+
+------------------------------------------------------------------------------
+             |               Robust
+        mech |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -7.842832    5.53074    -1.42   0.156    -18.68288    2.997219
+        riot |  -13.50643   7.561813    -1.79   0.074    -28.32731     1.31445
+     seglaw2 |   .0662434   .0748215     0.89   0.376     -.080404    .2128908
+       illit |  -5.506596   5.845399    -0.94   0.346    -16.96337    5.950175
+       regmw |   .2925962   .6290771     0.47   0.642    -.9403723    1.525565
+       regne |  -3.138928   .8557532    -3.67   0.000    -4.816173   -1.461683
+        regs |   .9247732   .9815672     0.94   0.346    -.9990632     2.84861
+        regw |  -1.879156   1.051674    -1.79   0.074    -3.940398    .1820862
+   estbnumpc |   636.5936   189.6099     3.36   0.001     264.9651    1008.222
+       _cons |  -.0462508   1.048615    -0.04   0.965    -2.101498    2.008997
+-------------+----------------------------------------------------------------
+    /lnalpha |   .4032007   .3089614                     -.2023524    1.008754
+-------------+----------------------------------------------------------------
+       alpha |   1.496607   .4623938                       .816807    2.742182
+------------------------------------------------------------------------------
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -51.65935   42.24299    -1.22   0.221    -134.4541    31.13539
+        riot |  -88.96447   67.85514    -1.31   0.190    -221.9581    44.02915
+     seglaw2 |   .4363334   .5176996     0.84   0.399    -.5783392    1.451006
+       illit |  -36.27098    40.9586    -0.89   0.376    -116.5484    44.00641
+   estbnumpc |    4193.13   2285.671     1.83   0.067    -286.7021    8672.962
+------------------------------------------------------------------------------
+
+. estimates store r0cy
+
+. 
+. nbreg elec lynchpc2  riot seglaw2 illit regmw regne regs regw estbnumpc, robust nolog
+
+Negative binomial regression                    Number of obs     =         49
+                                                Wald chi2(9)      =      47.72
+Dispersion           = mean                     Prob > chi2       =     0.0000
+Log pseudolikelihood = -51.509198               Pseudo R2         =     0.2188
+
+------------------------------------------------------------------------------
+             |               Robust
+        elec |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -44.02097   17.99421    -2.45   0.014    -79.28898   -8.752959
+        riot |   14.42909   5.368384     2.69   0.007     3.907252    24.95093
+     seglaw2 |   .2217818   .1526879     1.45   0.146     -.077481    .5210446
+       illit |  -20.33905   9.979209    -2.04   0.042    -39.89794    -.780156
+       regmw |  -.4676878   .8826975    -0.53   0.596    -2.197743    1.262367
+       regne |  -3.079219   .9413331    -3.27   0.001    -4.924199    -1.23424
+        regs |  -.4833038   1.773102    -0.27   0.785    -3.958519    2.991912
+        regw |  -.6514618   1.580199    -0.41   0.680    -3.748596    2.445672
+   estbnumpc |   315.8201   248.3941     1.27   0.204    -171.0234    802.6635
+       _cons |   .9104254   1.673082     0.54   0.586    -2.368756    4.189607
+-------------+----------------------------------------------------------------
+    /lnalpha |   .3526704   .6324027                     -.8868161    1.592157
+-------------+----------------------------------------------------------------
+       alpha |   1.422862   .8998218                      .4119653    4.914337
+------------------------------------------------------------------------------
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -70.23065   48.20793    -1.46   0.145    -164.7165    24.25516
+        riot |   23.02004   9.056542     2.54   0.011     5.269544    40.77054
+     seglaw2 |   .3538287   .3278171     1.08   0.280    -.2886811    .9963384
+       illit |  -32.44873   24.47059    -1.33   0.185     -80.4102    15.51275
+   estbnumpc |   503.8564   394.3794     1.28   0.201    -269.1129    1276.826
+------------------------------------------------------------------------------
+
+. estimates store r0cz
+
+. 
+. nbreg patsth lynchpc2  riot seglaw2 illit estbnumpc, robust nolog
+
+Negative binomial regression                    Number of obs     =         49
+                                                Wald chi2(5)      =      31.46
+Dispersion           = mean                     Prob > chi2       =     0.0000
+Log pseudolikelihood = -75.844443               Pseudo R2         =     0.0978
+
+------------------------------------------------------------------------------
+             |               Robust
+      patsth |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |   -5.83818   4.550596    -1.28   0.200    -14.75718    3.080825
+        riot |   65.04473   25.17009     2.58   0.010     15.71227    114.3772
+     seglaw2 |   .3892931   .1524036     2.55   0.011     .0905875    .6879986
+       illit |   15.98007   6.443901     2.48   0.013     3.350251    28.60988
+   estbnumpc |   -126.323   259.4981    -0.49   0.626      -634.93     382.284
+       _cons |  -2.021481    1.51813    -1.33   0.183     -4.99696    .9539987
+-------------+----------------------------------------------------------------
+    /lnalpha |   1.488534   .3421777                      .8178784     2.15919
+-------------+----------------------------------------------------------------
+       alpha |   4.430597   1.516051                      2.265688    8.664119
+------------------------------------------------------------------------------
+
+. eststo margin: margins, dydx(lynchpc2 riot seglaw2 illit estbnumpc) post
+
+Average marginal effects                        Number of obs     =         49
+Model VCE    : Robust
+
+Expression   : Predicted number of events, predict()
+dy/dx w.r.t. : lynchpc2 riot seglaw2 illit estbnumpc
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    lynchpc2 |  -814372.1    4141431    -0.20   0.844     -8931427     7302683
+        riot |    9073138   5.26e+07     0.17   0.863    -9.40e+07    1.12e+08
+     seglaw2 |   54302.78   307558.5     0.18   0.860    -548500.9    657106.4
+       illit |    2229071   1.21e+07     0.18   0.854    -2.15e+07    2.60e+07
+   estbnumpc |  -1.76e+07   9.98e+07    -0.18   0.860    -2.13e+08    1.78e+08
+------------------------------------------------------------------------------
+
+. estimates store r0caa
+
+. 
+. esttab r0cw r0cx r0cy r0cz r0caa, nomtitle label replace order(lynchpc2 riot seglaw2 illit est
+> bnumpc) keep(lynchpc2 riot seglaw2 illit estbnumpc) se star(* 0.1 ** 0.05 *** 0.01) b(%9.3f) t
+> itle("Black patents")
+
+Black patents
+------------------------------------------------------------------------------------------------
+> ----
+                              (1)             (2)             (3)             (4)             (5
+> )   
+------------------------------------------------------------------------------------------------
+> ----
+(mean) lynchpc2            -2.949         -34.792         -51.659         -70.231       -8.14e+0
+> 5   
+                         (26.536)        (24.044)        (42.243)        (48.208)      (4.14e+06
+> )   
+
+(mean) riot               -34.277           5.813         -88.964          23.020**      9.07e+0
+> 6   
+                         (94.868)        (56.919)        (67.855)         (9.057)      (5.26e+07
+> )   
+
+(mean) seglaw2              1.367          -0.043           0.436           0.354       54302.77
+> 9   
+                          (1.318)         (0.365)         (0.518)         (0.328)      (3.08e+05
+> )   
+
+(mean) illit              -90.017          11.125         -36.271         -32.449        2.23e+0
+> 6   
+                         (66.838)        (24.836)        (40.959)        (24.471)      (1.21e+07
+> )   
+
+(mean) estbnumpc        11702.338**      1810.168**      4193.130*        503.856       -1.76e+0
+> 7   
+                       (5135.609)       (846.933)      (2285.671)       (394.379)      (9.98e+07
+> )   
+------------------------------------------------------------------------------------------------
+> ----
+Observations                   49              49              49              49              4
+> 9   
+------------------------------------------------------------------------------------------------
+> ----
+Standard errors in parentheses
+* p<0.1, ** p<0.05, *** p<0.01
+
+. 
+. restore
+
+. 
+end of do-file
+
+. 
+. log close
+      name:  <unnamed>
+       log:  /home/michael/Dropbox/replications/cook_reanalysis/output/log.txt
+  log type:  text
+ closed on:  29 Sep 2023, 17:36:37
+------------------------------------------------------------------------------------------------

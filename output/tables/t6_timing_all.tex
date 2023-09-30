@@ -1,0 +1,35 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{7}{c}}
+\hline\hline
+                    &\multicolumn{1}{c}{(1)}&\multicolumn{1}{c}{(2)}&\multicolumn{1}{c}{(3)}&\multicolumn{1}{c}{(4)}&\multicolumn{1}{c}{(5)}&\multicolumn{1}{c}{(6)}&\multicolumn{1}{c}{(7)}\\
+                    &\multicolumn{1}{c}{Application}&\multicolumn{1}{c}{Grant: time series}&\multicolumn{1}{c}{Grant: fixed}&\multicolumn{1}{c}{Grant: panel}&\multicolumn{1}{c}{Grant: time series}&\multicolumn{1}{c}{Grant: fixed}&\multicolumn{1}{c}{Grant: panel}\\
+\hline
+Lynchings           &       0.131         &      -0.844\sym{*}  &      -0.886\sym{*}  &      -0.234         &      -0.547         &      -0.592\sym{*}  &      -0.105         \\
+                    &     (0.466)         &     (0.459)         &     (0.473)         &     (0.374)         &     (0.348)         &     (0.351)         &     (0.319)         \\
+[1em]
+Major Riots         &      -0.018         &      -0.137\sym{*}  &      -0.135\sym{*}  &      -0.076         &      -0.106\sym{**} &      -0.101\sym{*}  &      -0.049         \\
+                    &     (0.059)         &     (0.069)         &     (0.068)         &     (0.049)         &     (0.053)         &     (0.053)         &     (0.057)         \\
+[1em]
+Segregation laws    &      -0.025         &       0.033         &       0.033         &      -0.000         &       0.059\sym{**} &       0.059\sym{**} &       0.016         \\
+                    &     (0.035)         &     (0.026)         &     (0.026)         &     (0.025)         &     (0.025)         &     (0.024)         &     (0.028)         \\
+[1em]
+L.Lynchings         &                     &                     &                     &                     &       0.336         &       0.311         &       0.009         \\
+                    &                     &                     &                     &                     &     (0.416)         &     (0.412)         &     (0.486)         \\
+[1em]
+L.Major Riots       &                     &                     &                     &                     &       0.251\sym{***}&       0.264\sym{***}&       0.177\sym{**} \\
+                    &                     &                     &                     &                     &     (0.061)         &     (0.063)         &     (0.081)         \\
+[1em]
+L.Segregation laws  &                     &                     &                     &                     &      -0.036         &      -0.034         &      -0.022         \\
+                    &                     &                     &                     &                     &     (0.032)         &     (0.031)         &     (0.036)         \\
+[1em]
+1921 dummy          &       0.195         &      -0.459\sym{***}&      -0.480\sym{***}&      -0.980\sym{***}&      -0.350\sym{*}  &      -0.369\sym{*}  &      -0.986\sym{***}\\
+                    &     (0.288)         &     (0.169)         &     (0.168)         &     (0.167)         &     (0.196)         &     (0.189)         &     (0.218)         \\
+\hline
+Observations        &          55         &          55         &          55         &          55         &          55         &          55         &          55         \\
+\(R^{2}\)           &       0.197         &       0.301         &       0.297         &       0.214         &       0.557         &       0.565         &       0.352         \\
+\hline\hline
+\multicolumn{8}{l}{\footnotesize Standard errors in parentheses}\\
+\multicolumn{8}{l}{\footnotesize \sym{*} \(p<0.1\), \sym{**} \(p<0.05\), \sym{***} \(p<0.01\)}\\
+\end{tabular}
+}
